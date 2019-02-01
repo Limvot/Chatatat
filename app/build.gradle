@@ -1,0 +1,66 @@
+apply plugin: 'com.android.application'
+apply plugin: "kotlin-android"
+
+
+// Extract signing info into a properties file
+Properties props = new Properties()
+props.load(new FileInputStream(file("signing.properties")))
+
+android {
+    signingConfigs {
+        config {
+            keyAlias props['keyAlias']
+            keyPassword props['keyPassword']
+            storeFile file(props['storeFile'])
+            storePassword props['storePassword']
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+    compileSdkVersion 26
+    buildToolsVersion "27.0.3"
+    defaultConfig {
+        applicationId "io.github.limvot.chatatat"
+        minSdkVersion 15
+        targetSdkVersion 21
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
+        }
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
+        }
+    }
+}
+
+dependencies {
+    //compile project(':common')
+
+    compile 'com.android.support:support-v4:20.0.0'
+
+    compile 'org.jetbrains.kotlin:kotlin-stdlib:1.1.51'
+    compile 'org.jetbrains.anko:anko:0.10.0'
+    compile 'org.jetbrains.anko:anko-appcompat-v7-commons:0.10.0'
+    compile 'org.jetbrains.anko:anko-appcompat-v7:0.10.0'
+    compile 'org.jetbrains.anko:anko-coroutines:0.10.0'
+    compile 'org.jetbrains.anko:anko-cardview-v7:0.10.0'
+    compile 'org.jetbrains.anko:anko-design:0.10.0'
+    compile 'org.jetbrains.anko:anko-design-coroutines:0.10.0'
+    compile 'org.jetbrains.anko:anko-gridlayout-v7:0.10.0'
+    compile 'org.jetbrains.anko:anko-percent:0.10.0'
+    compile 'org.jetbrains.anko:anko-recyclerview-v7:0.10.0'
+    compile 'org.jetbrains.anko:anko-recyclerview-v7-coroutines:0.10.0'
+
+    compile 'org.jetbrains.anko:anko-support-v4-commons:0.10.0'
+    compile 'org.jetbrains.anko:anko-support-v4:0.10.0'
+
+    //compile 'com.android.support:support-v7:25.3.1'
+}
