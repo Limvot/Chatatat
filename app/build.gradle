@@ -1,52 +1,142 @@
+repositories {
+    mavenCentral()
+}
+
 apply plugin: 'com.android.application'
-apply plugin: "kotlin-android"
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'realm-android'
 
+buildscript {
+    repositories {
+        jcenter()
+    }
 
-// Extract signing info into a properties file
-Properties props = new Properties()
-props.load(new FileInputStream(file("signing.properties")))
+    dependencies {
+        classpath "io.realm:realm-gradle-plugin:5.8.0"
+    }
+}
+
+kapt {
+    correctErrorTypes = true
+}
 
 android {
-    signingConfigs {
-        config {
-            keyAlias props['keyAlias']
-            keyPassword props['keyPassword']
-            storeFile file(props['storeFile'])
-            storePassword props['storePassword']
-        }
+    compileSdkVersion 27
+    buildToolsVersion '28.0.3'
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE'
     }
-    lintOptions {
-        abortOnError false
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
-    compileSdkVersion 26
-    buildToolsVersion "27.0.3"
+
     defaultConfig {
         applicationId "io.github.limvot.chatatat"
-        minSdkVersion 15
-        targetSdkVersion 21
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion 16
+        targetSdkVersion 26
+        // use the version code
+        versionCode rootProject.ext.versionCodeProp
+        versionName rootProject.ext.versionNameProp
+
+        ndk {
+            abiFilters "armeabi-v7a", "x86"
+        }
+
+        packagingOptions {
+            // The project react-native does not provide 64-bit binaries at the
+            // time of this writing. Unfortunately, packaging any 64-bit
+            // binaries into the .apk will crash the app at runtime on 64-bit
+            // platforms.
+            exclude "lib/x86_64/libjingle_peerconnection_so.so"
+            exclude "lib/arm64-v8a/libjingle_peerconnection_so.so"
+        }
+
+        multiDexEnabled true
     }
+
+    signingConfigs {
+        release {
+            storeFile file(project.hasProperty("RELEASE_STORE_FILE") ? RELEASE_STORE_FILE : "/dummy/path")
+            storePassword project.hasProperty("RELEASE_STORE_PASSWORD") ? RELEASE_STORE_PASSWORD : "dummy password"
+            keyAlias project.hasProperty("RELEASE_KEY_ALIAS") ? RELEASE_KEY_ALIAS : "dummy alias"
+            keyPassword project.hasProperty("RELEASE_KEY_PASSWORD") ? RELEASE_KEY_PASSWORD : "dummy password"
+        }
+    }
+
+    dexOptions {
+        jumboMode true
+        javaMaxHeapSize "2g"
+    }
+
     buildTypes {
         debug {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.config
+            resValue "string", "git_revision", "\"${gitRevision()}\""
+            resValue "string", "git_revision_date", "\"${gitRevisionDate()}\""
+            resValue "string", "git_branch_name", "\"${gitBranchName()}\""
+            resValue "string", "build_number", rootProject.ext.buildNumberProp
+            minifyEnabled false
         }
+
         release {
-            minifyEnabled true
+            resValue "string", "git_revision", "\"${gitRevision()}\""
+            resValue "string", "git_revision_date", "\"${gitRevisionDate()}\""
+            resValue "string", "git_branch_name", "\"${gitBranchName()}\""
+            resValue "string", "build_number", rootProject.ext.buildNumberProp
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.config
+        }
+    }
+
+    repositories {
+        flatDir {
+            dir 'libs'
+        }
+
+        maven {
+            url "https://s3.amazonaws.com/repo.commonsware.com"
+        }
+
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots"
         }
     }
 }
 
+static def gitRevision() {
+    def cmd = "git rev-parse --short HEAD"
+    return cmd.execute().text.trim()
+}
+
+static def gitRevisionDate() {
+    def cmd = "git show -s --format=%ci HEAD^{commit}"
+    return cmd.execute().text.trim()
+}
+
+static def gitBranchName() {
+    def cmd = "git name-rev --name-only HEAD"
+    return cmd.execute().text.trim()
+}
+
 dependencies {
-    //compile project(':common')
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
+    // Kotlin KTX
+    //implementation 'androidx.core:core-ktx:0.3'
+
+    // Kotlin coroutines
+    //implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:0.30.2'
+    //implementation "org.jetbrains.anko:anko-commons:0.10.8"
 
     compile 'com.android.support:support-v4:20.0.0'
 
     compile 'org.jetbrains.kotlin:kotlin-stdlib:1.1.51'
+    compile 'org.jetbrains.kotlin:kotlin-stdlib:1.3.10'
     compile 'org.jetbrains.anko:anko:0.10.0'
     compile 'org.jetbrains.anko:anko-appcompat-v7-commons:0.10.0'
     compile 'org.jetbrains.anko:anko-appcompat-v7:0.10.0'
@@ -62,5 +152,79 @@ dependencies {
     compile 'org.jetbrains.anko:anko-support-v4-commons:0.10.0'
     compile 'org.jetbrains.anko:anko-support-v4:0.10.0'
 
-    //compile 'com.android.support:support-v7:25.3.1'
+    implementation 'com.android.support:multidex:1.0.0'
+
+    implementation 'me.leolin:ShortcutBadger:1.1.2@aar'
+
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support:design:27.1.1'
+    implementation 'com.android.support:cardview-v7:27.1.1'
+    implementation 'com.android.support:recyclerview-v7:27.1.1'
+    implementation 'com.android.support:preference-v7:27.1.1'
+    implementation 'com.android.support:preference-v14:27.1.1'
+    implementation 'com.jakewharton:butterknife:8.5.1'
+    kapt 'com.jakewharton:butterknife-compiler:8.5.1'
+
+    // UI
+    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
+    implementation 'com.getbase:floatingactionbutton:1.10.1'
+    implementation 'com.binaryfork:spanny:1.0.4'
+    implementation 'com.github.chrisbanes:PhotoView:2.1.4'
+
+    // Epoxy (without androidx packages)
+    implementation 'com.airbnb.android:epoxy:2.19.0'
+    kapt 'com.airbnb.android:epoxy-processor:2.19.0'
+
+    // Network
+    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+    implementation 'com.google.code.gson:gson:2.8.2'
+    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'com.squareup.okhttp3:okhttp-urlconnection:3.10.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
+    implementation 'com.facebook.stetho:stetho:1.5.0'
+    implementation 'com.facebook.stetho:stetho-okhttp3:1.5.0'
+    implementation 'com.squareup.okio:okio:1.13.0'
+
+    // Use Glide library to display image (Gif supported)
+    implementation 'com.github.bumptech.glide:glide:4.7.1'
+    kapt 'com.github.bumptech.glide:compiler:4.7.1'
+
+    implementation 'com.googlecode.libphonenumber:libphonenumber:8.9.12'
+
+    /************* Matrix SDK management **************/
+    // update settings.gradle
+    // use the matrix SDK as external lib
+    implementation(name: 'matrix-sdk', ext: 'aar')
+    // use the matrix SDK as a sub project
+    // you have to uncomment some lines in settings.gradle
+    //implementation project(':matrix-sdk')
+    implementation(name: 'olm-sdk', ext: 'aar')
+
+    /************* jitsi **************/
+    implementation 'javax.inject:javax.inject:1'
+
+    implementation 'com.facebook.fbui.textlayoutbuilder:textlayoutbuilder:1.0.0'
+    implementation 'com.facebook.fresco:fresco:1.3.0'
+    implementation 'com.facebook.fresco:imagepipeline-okhttp3:1.3.0'
+    implementation 'com.facebook.soloader:soloader:0.1.0'
+    implementation 'com.google.code.findbugs:jsr305:3.0.0'
+    implementation 'org.webkit:android-jsc:r174650'
+
+    implementation(name: 'jitsi-sdk', ext: 'aar')
+    implementation(name: 'react-native-background-timer', ext: 'aar')
+    implementation(name: 'react-native-fetch-blob', ext: 'aar')
+    implementation(name: 'react-native-immersive', ext: 'aar')
+    implementation(name: 'react-native-keep-awake', ext: 'aar')
+    implementation(name: 'react-native-vector-icons', ext: 'aar')
+    implementation(name: 'react-native-webrtc', ext: 'aar')
+    implementation(name: 'react-native', ext: 'aar')
+    implementation(name: 'react-native-locale-detector', ext: 'aar')
+
+    // another tracking than GA
+    //implementation 'org.piwik.sdk:piwik-sdk:2.0.0'
+
+    // Test
+    testImplementation 'junit:junit:4.12'
 }
+

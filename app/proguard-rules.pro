@@ -1,6 +1,6 @@
 # Add project specific ProGuard rules here.
 # By default, the flags in this file are appended to flags specified
-# in /opt/android-sdk/tools/proguard/proguard-android.txt
+# in C:\Android\android-sdk/tools/proguard/proguard-android.txt
 # You can edit the include path and order by changing the proguardFiles
 # directive in build.gradle.
 #
@@ -8,18 +8,6 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
--keep class io.** {*;}
--keep class kotlin.coroutines.**
--keep class kotlin.jvm.**
--keep class kotlinx.coroutines.**
--keep class org.jetbrains.anko.**
--dontoptimize
--dontobfuscate
--keepattributes Signature
--dontwarn sun.misc.Unsafe
--dontwarn java.beans.*
--dontwarn java.lang.management.*
--dontwarn org.jetbrains.anko.**
 
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface

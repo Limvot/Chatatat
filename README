@@ -4,3 +4,5 @@ A simple Kotlin client for Matrix.
 
 A work in progress, just starting out.
 
+Many thanks to Matrix and Riot, of course. Our build setup is copied from Riot verbatium before being simplified.
+
