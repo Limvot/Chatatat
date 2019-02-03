@@ -13,8 +13,10 @@ class RoomsActivity : Activity() {
         verticalLayout {
             textView("Rooms that you are in:")
             listView {
-                val listItems = Matrix.getRooms().map { it -> TextListItem("${it.getRoomDisplayName(getApplicationContext())} ${it.topic ?: ""}",
-                                                                           { Matrix.room = it; startActivity<ChatActivity>() }) }
+                val listItems = Matrix.getRoomsWithSummaries().sortedBy { (summary1,_) -> summary1.latestReceivedEvent.eventId }
+                                                              .reversed()
+                                                              .map { (summary, room) -> TextListItem("${room.getRoomDisplayName(getApplicationContext())}: ${summary?.latestReceivedEvent?.content?.getAsJsonObject()?.get("body")?.getAsString()}",
+                                                                                                     { Matrix.room = room; startActivity<ChatActivity>() }) }
                 adapter = SimpleListAdaptor(ctx, listItems)
             }
         }

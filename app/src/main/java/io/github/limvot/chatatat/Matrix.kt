@@ -65,8 +65,8 @@ object Matrix {
                                                     }
                                                 });
     }
-    public fun getRooms(): Collection<Room> {
-        return session?.getDataHandler()?.getSummaries(false)?.map { session?.getDataHandler()?.getRoom(it.roomId) }?.filterNotNull() ?: listOf()
+    public fun getRoomsWithSummaries(): Collection<Pair<RoomSummary, Room>> {
+        return session?.getDataHandler()?.getSummaries(false)?.map { Pair(it, session?.getDataHandler()?.getRoom(it.roomId)!!) }?.filterNotNull() ?: listOf()
     }
 }
 
