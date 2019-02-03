@@ -38,6 +38,7 @@ import org.matrix.androidsdk.util.Log;
 object Matrix {
     private var session: MXSession? = null
     public var room: Room? = null
+    public var liveEventListener: ((Event, RoomState) -> Unit)? = null
     public fun login(serverURI: String, name: String, pass: String, context: Context, callback: () -> Unit) {
         var hsConfig = HomeServerConnectionConfig.Builder()
                         .withHomeServerUri(Uri.parse(serverURI))
@@ -57,6 +58,7 @@ object Matrix {
                                                             override public fun onSyncError(matrixError: MatrixError) {
                                                             }
                                                             override public fun onLiveEvent(event: Event, roomState: RoomState) {
+                                                                liveEventListener?.invoke(event, roomState)
                                                             }
                                                         })
                                                         session?.startEventStream(null)
