@@ -10,7 +10,8 @@ with import <nixpkgs> {
 let
   sdk = androidenv.androidsdk {
      platformVersions = [ "27" ];
-     buildToolsVersions = [ "28.0.3" ];
+     #buildToolsVersions = [ "28.0.3" ];
+     buildToolsVersions = [ "27.0.3" ];
      abiVersions = [ "x86" "x86_64"];
      useGoogleAPIs = true;
    };

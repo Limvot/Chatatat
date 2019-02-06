@@ -20,6 +20,7 @@
         </activity>
         <activity android:name=".RoomsActivity"></activity>
         <activity android:name=".ChatActivity"></activity>
+        <service android:name=".Matrix"></service>
     </application>
 
 </manifest>

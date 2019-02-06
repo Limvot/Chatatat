@@ -16,7 +16,7 @@ class RoomsActivity : Activity() {
                 val listItems = Matrix.getRoomsWithSummaries().sortedBy { (summary1,_) -> summary1.latestReceivedEvent.eventId }
                                                               .reversed()
                                                               .map { (summary, room) -> TextListItem("${room.getRoomDisplayName(getApplicationContext())}: ${summary?.latestReceivedEvent?.content?.getAsJsonObject()?.get("body")?.getAsString()}",
-                                                                                                     { Matrix.room = room; startActivity<ChatActivity>() }) }
+                                                                                                     { startActivity<ChatActivity>(Matrix.ROOM_ID to room.roomId) }) }
                 adapter = SimpleListAdaptor(ctx, listItems)
             }
         }
