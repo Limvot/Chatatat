@@ -65,7 +65,7 @@ public class Matrix : Service() {
                                                             session = MXSession.Builder(
                                                                 hsConfig,
                                                                 MXDataHandler(MXMemoryStore(p0, context), p0), context).build()
-                                                            session?.getDataHandler()?.addListener(object: MXEventListener() {
+                                                            session?.dataHandler?.addListener(object: MXEventListener() {
                                                                 override public fun onInitialSyncComplete(toToken: String) {
                                                                     synced = true
                                                                     callback()
@@ -129,7 +129,12 @@ public class Matrix : Service() {
             val room = Matrix.getRoom(roomId)
             val roomName = room.getRoomDisplayName(context)
             val senderName = room.getMember(event.sender)?.name
+            val fromSelf = event.sender == session?.dataHandler?.userId
             val message = event.content.getAsJsonObject().get("body").getAsString()
+
+            if (roomId !in roomsToNotifications && fromSelf) {
+                return;
+            }
 
             Matrix.setupNotificationChannels(context)
             val intentME = Intent(context, ChatActivity::class.java)
@@ -138,11 +143,11 @@ public class Matrix : Service() {
             val (style, ID) = if (roomId in roomsToNotifications) {
                 var (oldId, oldNotification) = roomsToNotifications[roomId]!!
                 var style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(oldNotification)
-                Pair(style.addMessage(message, 0, senderName), oldId)
+                Pair(style.addMessage(message, 0, if (fromSelf) { null } else { senderName }), oldId)
             } else {
                 Pair(NotificationCompat.MessagingStyle("Me")
                     .setConversationTitle(roomName)
-                    .addMessage(message, 0, senderName), notificationID++)
+                    .addMessage(message, 0, if (fromSelf) { null } else { senderName }), notificationID++)
             }
             val messageNotification = NotificationCompat.Builder(context, Matrix.messageChannelID)
                 .setSmallIcon(R.drawable.ic_launcher)
@@ -151,6 +156,7 @@ public class Matrix : Service() {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
                 .setStyle(style)
+                .setOnlyAlertOnce(fromSelf)
                 .build()
             intentRequestCode += 1
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
