@@ -17,6 +17,7 @@ class ChatActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         val intentRoomID = getIntent().getStringExtra(Matrix.ROOM_ID)
+        Matrix.clearRoomNotification(intentRoomID)
         val room = Matrix.getRoom(intentRoomID)
 
         var messages: MutableList<TextListItem> = mutableListOf()

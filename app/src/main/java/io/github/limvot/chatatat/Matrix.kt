@@ -10,6 +10,7 @@ import android.app.Service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+
 import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationManagerCompat
 
@@ -73,11 +74,7 @@ public class Matrix : Service() {
                                                                 }
                                                                 override public fun onLiveEvent(event: Event, roomState: RoomState) {
                                                                     if (synced && event.type == Event.EVENT_TYPE_MESSAGE) {
-                                                                        val room = Matrix.getRoom(event.roomId)
-                                                                        val roomName = room.getRoomDisplayName(context)
-                                                                        val senderName = room.getMember(event.sender)?.name
-                                                                        val message = event.content.getAsJsonObject().get("body").getAsString()
-                                                                        Matrix.sendMessageNotification(context, roomName, "$senderName: $message", event.roomId)
+                                                                        Matrix.sendMessageNotification(context, event)
                                                                     }
                                                                 }
                                                             })
@@ -115,26 +112,50 @@ public class Matrix : Service() {
                 }
             }
         }
-        var incrementingID = 1337
+        var notificationID = 2
+        var roomsToNotifications: MutableMap<String, Pair<Int, Notification>> = mutableMapOf()
+        public fun clearRoomNotification(roomId: String) {
+            roomsToNotifications.remove(roomId)
+        }
+        // so this is why. THIS IS WHY
+        // this would be a good warning to have on getActivity, but no,
+        // it's in the create a notification guide
+        // Sigh. Ok, it's on the PendingIntent page too.
+        // I guess this is on me. I should read more first.
+        var intentRequestCode = 1
         val ROOM_ID = "com.github.limvot.Chatatat:roomID"
-        public fun sendMessageNotification(context: Context, title: String, text: String, roomId: String) {
+        public fun sendMessageNotification(context: Context, event: Event) {
+            val roomId = event.roomId
+            val room = Matrix.getRoom(roomId)
+            val roomName = room.getRoomDisplayName(context)
+            val senderName = room.getMember(event.sender)?.name
+            val message = event.content.getAsJsonObject().get("body").getAsString()
+
             Matrix.setupNotificationChannels(context)
-            val bigTextStyle = NotificationCompat.BigTextStyle();
-            bigTextStyle.setBigContentTitle(title)
-            bigTextStyle.bigText(text)
             val intentME = Intent(context, ChatActivity::class.java)
             intentME.putExtra(ROOM_ID, roomId)
+
+            val (style, ID) = if (roomId in roomsToNotifications) {
+                var (oldId, oldNotification) = roomsToNotifications[roomId]!!
+                var style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(oldNotification)
+                Pair(style.addMessage(message, 0, senderName), oldId)
+            } else {
+                Pair(NotificationCompat.MessagingStyle("Me")
+                    .setConversationTitle(roomName)
+                    .addMessage(message, 0, senderName), notificationID++)
+            }
             val messageNotification = NotificationCompat.Builder(context, Matrix.messageChannelID)
                 .setSmallIcon(R.drawable.ic_launcher)
                 .setWhen(System.currentTimeMillis())
-                .setStyle(bigTextStyle)
-                .setContentIntent(PendingIntent.getActivity(context, 0, intentME, Intent.FLAG_ACTIVITY_NEW_TASK))
+                .setContentIntent(PendingIntent.getActivity(context, intentRequestCode, intentME, Intent.FLAG_ACTIVITY_NEW_TASK))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
+                .setStyle(style)
                 .build()
+            intentRequestCode += 1
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(incrementingID, messageNotification)
-            incrementingID += 1
+            roomsToNotifications[roomId] = Pair(ID, messageNotification)
+            notificationManager.notify(ID, messageNotification)
         }
     }
 
@@ -152,11 +173,10 @@ public class Matrix : Service() {
                 .setContentTitle("Title!")
                 .setContentText("content")
                 .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, RoomsActivity::class.java), 0))
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build()
             startForeground(1, notification)
             Matrix.session?.startEventStream(null)
-
         }
         return super.onStartCommand(intent, flags, startID)
     }
