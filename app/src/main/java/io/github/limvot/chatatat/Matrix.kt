@@ -88,6 +88,10 @@ public class Matrix : Service() {
         public fun getRoom(id: String): Room {
             return session?.getDataHandler()?.getRoom(id)!!
         }
+        public val ourId: String
+            get() = session?.dataHandler?.userId!!
+        public val loggedIn: Boolean
+            get() = session != null
         val eventChannelID = "EVENT_CHANNEL"
         val messageChannelID = "MESSAGE_CHANNEL"
         public fun setupNotificationChannels(context: Context) {

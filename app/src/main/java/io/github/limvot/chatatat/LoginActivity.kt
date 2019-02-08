@@ -14,11 +14,10 @@ import org.jetbrains.anko.*
 import org.jetbrains.anko.sdk25.coroutines.onClick
 
 
-class HomeScreen : Activity() {
+class LoginActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Homescreen GUI
         verticalLayout {
             textView("http(s) address of Matrix server")
             val homeserver = editText("https://room409.xyz")
