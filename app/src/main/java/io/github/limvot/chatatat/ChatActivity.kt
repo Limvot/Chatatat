@@ -47,22 +47,21 @@ class ChatActivity : Activity() {
                     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
                         val event = getItem(position)
                         val fromSelf = event.sender == Matrix.ourId
-                        val prevSameSender = position > 0 && getItem(position-1).sender == event.sender
-                        val afterSameSender = position+1 < getCount() && getItem(position+1).sender == event.sender
+                        val eventToStatus = { e: Event -> "${room.getMember(e.sender)?.name} - ${e.formattedOriginServerTs()}" }
+                        val eventStatus = eventToStatus(event)
+                        val prevStatusSame = position > 0              && eventToStatus(getItem(position-1)) == eventStatus
+                        val nextStatusSame = position + 1 < getCount() && eventToStatus(getItem(position+1)) == eventStatus
                         return with(ctx) {
                             relativeLayout {
-                                val nameView = if (!prevSameSender) {
-                                        textView(room.getMember(event.sender)?.name) {
+                                val nameView = if (!prevStatusSame) {
+                                        textView("${room.getMember(event.sender)?.name} - ${event.formattedOriginServerTs()}") {
                                         id = 1337
                                     }.lparams() {
                                         if (fromSelf) {
                                             alignParentRight()
-                                            /*rightMargin = dip(10)*/
                                         } else {
                                             alignParentLeft()
-                                            /*leftMargin = dip(10)*/
                                         }
-                                        /*bottomPadding = dip(4)*/
                                     }
                                 } else {
                                     null
@@ -94,10 +93,10 @@ class ChatActivity : Activity() {
                                         alignParentLeft()
                                     }
                                 }
-                                if (!prevSameSender) {
+                                if (!prevStatusSame) {
                                     topPadding = dip(10)
                                 }
-                                if (!afterSameSender) {
+                                if (!nextStatusSame) {
                                     bottomPadding = dip(10)
                                 } else {
                                     bottomPadding = dip(4)
