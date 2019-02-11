@@ -19,8 +19,9 @@ class RoomsActivity : Activity() {
             return
         }
 
+        setTitle("Rooms:")
+
         verticalLayout {
-            textView("Rooms that you are in:")
             listView {
                 val listItems = Matrix.getRoomsWithSummaries().sortedBy { (summary1,_) -> summary1.latestReceivedEvent.eventId }
                                                               .reversed()
@@ -31,7 +32,8 @@ class RoomsActivity : Activity() {
                         val (text, f) = getItem(position)
                         return with(ctx) {
                             linearLayout {
-                                textView(text) { onClick { f() } }.lparams() { padding = dip(10) }
+                                textView(text).lparams() { padding = dip(10) }
+                                onClick { f() }
                             }
                         }
                     }

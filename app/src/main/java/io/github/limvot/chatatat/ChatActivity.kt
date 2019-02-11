@@ -35,44 +35,58 @@ class ChatActivity : Activity() {
         var flag_loading = false;
 
         var messagesList: AbsListView? = null
+        setTitle("${room.getRoomDisplayName(getApplicationContext())}${ if (room.topic != null) { ": ${room.topic}" } else { ""} }")
         verticalLayout {
-            textView("${room.getRoomDisplayName(getApplicationContext())}: ${room.topic ?: "no topic"}")
             /*val membersText = textView("members:")*/
             /*room.getMembersAsync(CallbackWrapper({ membersText.setText("members: ${it.map { it.name }}") }))*/
 
             messagesList = listView {
+                dividerHeight = 0
+                divider = null
                 messages_adapter = object: ArrayAdapter<Event>(ctx, 0, messages) {
                     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
                         val event = getItem(position)
                         val fromSelf = event.sender == Matrix.ourId
+                        val prevSameSender = position > 0 && getItem(position-1).sender == event.sender
+                        val afterSameSender = position+1 < getCount() && getItem(position+1).sender == event.sender
                         return with(ctx) {
                             relativeLayout {
-                                val nameView = textView(room.getMember(event.sender)?.name) {
-                                    id = 1337
-                                }.lparams() {
-                                    if (fromSelf) {
-                                        alignParentRight()
-                                        /*rightMargin = dip(10)*/
-                                    } else {
-                                        alignParentLeft()
-                                        /*leftMargin = dip(10)*/
-                                    }
-                                    bottomPadding = dip(4)
-                                }
-                                textView(event.content.getAsJsonObject().get("body").getAsString()) {
-                                    textSize = 18f
-                                    background = GradientDrawable().apply {
-                                        shape = GradientDrawable.RECTANGLE
-                                        setColor(Color.DKGRAY)
-                                        cornerRadii = if (fromSelf) {
-                                            floatArrayOf(15f, 15f, 5f, 5f, 15f, 15f, 15f, 15f)
+                                val nameView = if (!prevSameSender) {
+                                        textView(room.getMember(event.sender)?.name) {
+                                        id = 1337
+                                    }.lparams() {
+                                        if (fromSelf) {
+                                            alignParentRight()
+                                            /*rightMargin = dip(10)*/
                                         } else {
-                                            floatArrayOf(5f, 5f, 15f, 15f, 15f, 15f, 15f, 15f)
+                                            alignParentLeft()
+                                            /*leftMargin = dip(10)*/
                                         }
+                                        /*bottomPadding = dip(4)*/
+                                    }
+                                } else {
+                                    null
+                                }
+                                relativeLayout {
+                                        background = GradientDrawable().apply {
+                                            shape = GradientDrawable.RECTANGLE
+                                            setColor(Color.DKGRAY)
+                                            cornerRadii = if (fromSelf) {
+                                                floatArrayOf(15f, 15f, 5f, 5f, 15f, 15f, 15f, 15f)
+                                            } else {
+                                                floatArrayOf(5f, 5f, 15f, 15f, 15f, 15f, 15f, 15f)
+                                            }
+                                        }
+                                    textView(event.content.getAsJsonObject().get("body").getAsString()) {
+                                        textSize = 18f
+                                    }.lparams() {
+                                        padding = dip(10)
+                                        elevation = 2f
                                     }
                                 }.lparams() {
-                                    below(nameView)
-                                    padding = dip(10)
+                                    if (nameView != null) {
+                                        below(nameView)
+                                    }
                                     elevation = 2f
                                     if (fromSelf) {
                                         alignParentRight()
@@ -80,7 +94,14 @@ class ChatActivity : Activity() {
                                         alignParentLeft()
                                     }
                                 }
-                                verticalPadding = dip(10)
+                                if (!prevSameSender) {
+                                    topPadding = dip(10)
+                                }
+                                if (!afterSameSender) {
+                                    bottomPadding = dip(10)
+                                } else {
+                                    bottomPadding = dip(4)
+                                }
                                 rightPadding = if (fromSelf) { dip(15) } else { dip(60) }
                                 leftPadding  = if (fromSelf) { dip(60) } else { dip(15) }
                                 clipToPadding = false
