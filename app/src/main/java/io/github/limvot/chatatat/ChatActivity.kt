@@ -99,12 +99,20 @@ class ChatActivity : Activity() {
                                         }
                                     }
 
-                                    textView(event.content?.getAsJsonObject()?.get("body")?.getAsString()) {
-                                        textSize = 18f
-                                    }.lparams() {
-                                        padding = dip(10)
-                                        elevation = 2f
+                                    if (event.content?.getAsJsonObject()?.get("msgtype")?.getAsString() == "m.image") {
+                                        val image = imageView().lparams() {
+                                            padding = dip(10)
+                                        }
+                                        Matrix.getImage(event.content?.getAsJsonObject()?.get("url")?.getAsString()!!, image)
+                                    } else {
+                                        textView(event.content?.getAsJsonObject()?.get("body")?.getAsString()) {
+                                            textSize = 18f
+                                        }.lparams() {
+                                            padding = dip(10)
+                                            elevation = 2f
+                                        }
                                     }
+
                                 }.lparams() {
                                     if (nameView != null) {
                                         below(nameView)
@@ -132,6 +140,7 @@ class ChatActivity : Activity() {
                                 rightPadding = if (fromSelf) { dip(15) } else { dip(60) }
                                 leftPadding  = if (fromSelf) { dip(60) } else { dip(15) }
                                 clipToPadding = false
+                                onClick { toast("$event") }
                             }
                         }
                     }

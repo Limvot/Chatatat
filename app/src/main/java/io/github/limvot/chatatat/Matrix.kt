@@ -19,6 +19,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 
 import org.matrix.androidsdk.HomeServerConnectionConfig;
 import org.matrix.androidsdk.MXDataHandler;
@@ -53,18 +54,19 @@ public class Matrix : Service() {
     companion object {
         private var session: MXSession? = null
         public var roomsActivityUpdate: (() -> Unit)? = null
+        private var hsConfig: HomeServerConnectionConfig? = null
         public fun login(serverURI: String, name: String, pass: String, context: Context, callback: () -> Unit) {
             var synced = false
-            var hsConfig = HomeServerConnectionConfig.Builder()
+            hsConfig = HomeServerConnectionConfig.Builder()
                             .withHomeServerUri(Uri.parse(serverURI))
                             .build();
             LoginRestClient(hsConfig).loginWithUser(name,
                                                     pass,
                                                     object: SimpleApiCallback<Credentials>() {
                                                         override public fun onSuccess(p0: Credentials) {
-                                                            hsConfig.setCredentials(p0)
+                                                            hsConfig?.setCredentials(p0)
                                                             session = MXSession.Builder(
-                                                                hsConfig,
+                                                                hsConfig!!,
                                                                 MXDataHandler(MXMemoryStore(p0, context), p0), context).build()
                                                             session?.dataHandler?.addListener(object: MXEventListener() {
                                                                 override public fun onInitialSyncComplete(toToken: String) {
@@ -93,6 +95,9 @@ public class Matrix : Service() {
             get() = session?.dataHandler?.userId!!
         public val loggedIn: Boolean
             get() = session != null
+        public fun getImage(contentUrl: String, imageView: ImageView) {
+            session?.dataHandler?.mediaCache?.loadBitmap(hsConfig, imageView, contentUrl, 0, 0, null, null)
+        }
         val eventChannelID = "EVENT_CHANNEL"
         val messageChannelID = "MESSAGE_CHANNEL"
         public fun setupNotificationChannels(context: Context) {
