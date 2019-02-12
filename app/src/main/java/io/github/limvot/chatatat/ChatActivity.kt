@@ -47,14 +47,15 @@ class ChatActivity : Activity() {
                     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
                         val event = getItem(position)
                         val fromSelf = event.sender == Matrix.ourId
-                        val eventToStatus = { e: Event -> "${room.getMember(e.sender)?.name} - ${e.formattedOriginServerTs()}" }
-                        val eventStatus = eventToStatus(event)
-                        val prevStatusSame = position > 0              && eventToStatus(getItem(position-1)) == eventStatus
-                        val nextStatusSame = position + 1 < getCount() && eventToStatus(getItem(position+1)) == eventStatus
+                        val name = room.getMember(event.sender)?.name
+                        val time = event.formattedOriginServerTs()
+                        val prevTimeSame   = position > 0              && getItem(position-1).formattedOriginServerTs() == time
+                        val prevSenderSame = position > 0              && room.getMember(getItem(position-1).sender)?.name == name
+                        val nextSenderSame = position + 1 < getCount() && room.getMember(getItem(position+1).sender)?.name == name
                         return with(ctx) {
                             relativeLayout {
-                                val nameView = if (!prevStatusSame) {
-                                        textView("${room.getMember(event.sender)?.name} - ${event.formattedOriginServerTs()}") {
+                                val nameView = if (!prevSenderSame) {
+                                    textView(name) {
                                         id = 1337
                                     }.lparams() {
                                         if (fromSelf) {
@@ -66,16 +67,38 @@ class ChatActivity : Activity() {
                                 } else {
                                     null
                                 }
-                                relativeLayout {
-                                        background = GradientDrawable().apply {
-                                            shape = GradientDrawable.RECTANGLE
-                                            setColor(Color.DKGRAY)
-                                            cornerRadii = if (fromSelf) {
-                                                floatArrayOf(15f, 15f, 5f, 5f, 15f, 15f, 15f, 15f)
+
+                                val timeView = if (!prevTimeSame) {
+                                    textView(time) {
+                                        id = 1338
+                                        textSize = 10f
+                                    }.lparams() {
+                                        if (nameView != null) {
+                                            if (fromSelf) {
+                                                leftOf(nameView)
+                                                rightMargin = dip(10)
                                             } else {
-                                                floatArrayOf(5f, 5f, 15f, 15f, 15f, 15f, 15f, 15f)
+                                                rightOf(nameView)
+                                                leftMargin = dip(10)
                                             }
+                                            padding = dip(10)
                                         }
+                                    }
+                                } else {
+                                    null
+                                }
+
+                                relativeLayout {
+                                    background = GradientDrawable().apply {
+                                        shape = GradientDrawable.RECTANGLE
+                                        setColor(Color.DKGRAY)
+                                        cornerRadii = if (fromSelf) {
+                                            floatArrayOf(15f, 15f, 5f, 5f, 15f, 15f, 15f, 15f)
+                                        } else {
+                                            floatArrayOf(5f, 5f, 15f, 15f, 15f, 15f, 15f, 15f)
+                                        }
+                                    }
+
                                     textView(event.content?.getAsJsonObject()?.get("body")?.getAsString()) {
                                         textSize = 18f
                                     }.lparams() {
@@ -85,6 +108,8 @@ class ChatActivity : Activity() {
                                 }.lparams() {
                                     if (nameView != null) {
                                         below(nameView)
+                                    } else if (timeView != null) {
+                                        below(timeView)
                                     }
                                     elevation = 2f
                                     if (fromSelf) {
@@ -93,10 +118,13 @@ class ChatActivity : Activity() {
                                         alignParentLeft()
                                     }
                                 }
-                                if (!prevStatusSame) {
+
+                                if (!prevSenderSame) {
                                     topPadding = dip(10)
+                                } else if (!prevTimeSame) {
+                                    topPadding = dip(20)
                                 }
-                                if (!nextStatusSame) {
+                                if (!nextSenderSame) {
                                     bottomPadding = dip(10)
                                 } else {
                                     bottomPadding = dip(4)
