@@ -103,7 +103,7 @@ class ChatActivity : Activity() {
                                         val image = imageView().lparams() {
                                             padding = dip(10)
                                         }
-                                        Matrix.getImage(event.content?.getAsJsonObject()?.get("url")?.getAsString()!!, image)
+                                        Matrix.getImage(getApplicationContext(), event.content?.getAsJsonObject()?.get("url")?.getAsString()!!, image)
                                     } else {
                                         textView(event.content?.getAsJsonObject()?.get("body")?.getAsString()) {
                                             textSize = 18f

@@ -21,6 +21,8 @@ import android.net.Uri
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 
+import com.bumptech.glide.Glide
+
 import org.matrix.androidsdk.HomeServerConnectionConfig;
 import org.matrix.androidsdk.MXDataHandler;
 import org.matrix.androidsdk.MXSession;
@@ -95,8 +97,10 @@ public class Matrix : Service() {
             get() = session?.dataHandler?.userId!!
         public val loggedIn: Boolean
             get() = session != null
-        public fun getImage(contentUrl: String, imageView: ImageView) {
-            session?.dataHandler?.mediaCache?.loadBitmap(hsConfig, imageView, contentUrl, 0, 0, null, null)
+        public fun getImage(context: Context, contentUrl: String, imageView: ImageView) {
+            val downloadableUrl = session?.getContentManager()?.getDownloadableUrl(contentUrl)
+            Glide.with(context).load(downloadableUrl).into(imageView)
+            /*session?.dataHandler?.mediaCache?.loadBitmap(hsConfig, imageView, contentUrl, 0, 0, null, null)*/
         }
         val eventChannelID = "EVENT_CHANNEL"
         val messageChannelID = "MESSAGE_CHANNEL"
