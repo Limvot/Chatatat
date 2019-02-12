@@ -76,7 +76,7 @@ class ChatActivity : Activity() {
                                                 floatArrayOf(5f, 5f, 15f, 15f, 15f, 15f, 15f, 15f)
                                             }
                                         }
-                                    textView(event.content.getAsJsonObject().get("body").getAsString()) {
+                                    textView(event.content?.getAsJsonObject()?.get("body")?.getAsString()) {
                                         textSize = 18f
                                     }.lparams() {
                                         padding = dip(10)

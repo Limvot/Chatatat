@@ -52,6 +52,7 @@ public class Matrix : Service() {
 
     companion object {
         private var session: MXSession? = null
+        public var roomsActivityUpdate: (() -> Unit)? = null
         public fun login(serverURI: String, name: String, pass: String, context: Context, callback: () -> Unit) {
             var synced = false
             var hsConfig = HomeServerConnectionConfig.Builder()
@@ -70,11 +71,11 @@ public class Matrix : Service() {
                                                                     synced = true
                                                                     callback()
                                                                 }
-                                                                override public fun onSyncError(matrixError: MatrixError) {
-                                                                }
+                                                                override public fun onSyncError(matrixError: MatrixError) { }
                                                                 override public fun onLiveEvent(event: Event, roomState: RoomState) {
                                                                     if (synced && event.type == Event.EVENT_TYPE_MESSAGE) {
                                                                         Matrix.sendMessageNotification(context, event)
+                                                                        roomsActivityUpdate?.invoke()
                                                                     }
                                                                 }
                                                             })
@@ -99,19 +100,15 @@ public class Matrix : Service() {
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 if (notificationManager.getNotificationChannel(eventChannelID) == null) {
                     /*val notificationChannel = NotificationChannel(channelID, "listening for events", NotificationManager.IMPORTANCE_MIN)*/
-                    val notificationChannel = NotificationChannel(eventChannelID, "listening for events", NotificationManager.IMPORTANCE_DEFAULT)
-                    notificationChannel.description = "listening for events"
+                    val notificationChannel = NotificationChannel(eventChannelID, "Foreground Service Event Listening", NotificationManager.IMPORTANCE_DEFAULT)
+                    notificationChannel.description = "Channel for permanent forground service spawned for listening for new events"
                     notificationChannel.setSound(null, null)
                     notificationChannel.setShowBadge(false)
                     notificationManager.createNotificationChannel(notificationChannel)
                 }
                 if (notificationManager.getNotificationChannel(messageChannelID) == null) {
-                    val notificationChannel = NotificationChannel(messageChannelID,
-                                                          "giving you messages",
-                                                          NotificationManager.IMPORTANCE_DEFAULT)
-                    notificationChannel.description = "giving you info"
-                    /*notificationChannel.setSound(null, null)*/
-                    /*notificationChannel.setShowBadge(false)*/
+                    val notificationChannel = NotificationChannel(messageChannelID, "Messages", NotificationManager.IMPORTANCE_DEFAULT)
+                    notificationChannel.description = "Channel to notify of new messages"
                     notificationManager.createNotificationChannel(notificationChannel)
                 }
             }
@@ -171,7 +168,6 @@ public class Matrix : Service() {
 
     override public fun onCreate() {
         super.onCreate()
-
     }
 
     override public fun onStartCommand(intent: Intent, flags: Int, startID: Int): Int {
@@ -190,8 +186,7 @@ public class Matrix : Service() {
         }
         return super.onStartCommand(intent, flags, startID)
     }
-    override public fun onDestroy() {
-    }
+    override public fun onDestroy() { }
     override public fun onBind(intent: Intent): Binder? {
         return null
     }

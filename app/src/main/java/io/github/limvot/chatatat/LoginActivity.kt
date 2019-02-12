@@ -20,11 +20,11 @@ class LoginActivity : Activity() {
 
         verticalLayout {
             textView("http(s) address of Matrix server")
-            val homeserver = editText("https://room409.xyz")
+            val homeserver = editText("https://matrix.org")
             textView("username")
-            val username = editText("miloignis")
+            val username = editText()
             textView("password")
-            val password = editText("hunter2")
+            val password = editText()
             button("Login") { onClick { 
                 val dialog = indeterminateProgressDialog(title="logging in")
                 val serverURI = homeserver.text.toString()

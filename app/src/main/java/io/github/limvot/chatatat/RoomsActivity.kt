@@ -12,6 +12,8 @@ import android.view.View
 import android.view.ViewGroup
 
 class RoomsActivity : Activity() {
+    val items = mutableListOf<Triple<String, String, String>>()
+    var roomsAdapter: ArrayAdapter<Triple<String, String, String>>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!Matrix.loggedIn) {
@@ -23,22 +25,36 @@ class RoomsActivity : Activity() {
 
         verticalLayout {
             listView {
-                val listItems = Matrix.getRoomsWithSummaries().sortedBy { (summary1,_) -> summary1.latestReceivedEvent.eventId }
-                                                              .reversed()
-                                                              .map { (summary, room) -> Pair("${room.getRoomDisplayName(getApplicationContext())}: ${summary?.latestReceivedEvent?.content?.getAsJsonObject()?.get("body")?.getAsString()}",
-                                                                                                     { startActivity<ChatActivity>(Matrix.ROOM_ID to room.roomId) }) }
-                adapter = object: ArrayAdapter<Pair<String, () -> Unit>>(ctx, 0, listItems) {
+                roomsAdapter = object: ArrayAdapter<Triple<String, String, String>>(ctx, 0, items) {
                     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
-                        val (text, f) = getItem(position)
+                        val (name, lastMessage, roomId) = getItem(position)
                         return with(ctx) {
                             linearLayout {
-                                textView(text).lparams() { padding = dip(10) }
-                                onClick { f() }
+                                textView("$name: ${if (lastMessage.length > 100) { lastMessage.substring(0,97) + "..." } else { lastMessage }}").lparams() { padding = dip(10) }
+                                onClick { startActivity<ChatActivity>(Matrix.ROOM_ID to roomId) }
                             }
                         }
                     }
                 }
+                adapter = roomsAdapter
             }
         }
+    }
+    override fun onResume() {
+        super.onResume()
+        Matrix.roomsActivityUpdate = {
+            items.clear()
+            items.addAll(Matrix.getRoomsWithSummaries().sortedBy { (summary1,_) -> summary1.latestReceivedEvent.eventId }
+                                                                  .reversed()
+                                                                  .map { (summary, room) -> Triple(room.getRoomDisplayName(getApplicationContext()),
+                                                                                                   summary?.latestReceivedEvent?.content?.getAsJsonObject()?.get("body")?.getAsString() ?: "",
+                                                                                                   room.roomId) })
+            roomsAdapter?.notifyDataSetChanged()
+        }
+        Matrix.roomsActivityUpdate?.invoke()
+    }
+    override fun onPause() {
+        super.onPause()
+        Matrix.roomsActivityUpdate = null
     }
 }
