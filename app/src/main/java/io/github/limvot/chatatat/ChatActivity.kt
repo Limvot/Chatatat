@@ -1,25 +1,61 @@
 package io.github.limvot.chatatat
 
 import org.jetbrains.anko.*
+import org.jetbrains.anko.custom.*
 import org.jetbrains.anko.sdk25.coroutines.onClick
 
+import android.os.Build
 import android.os.Bundle
 import android.app.Activity
 import android.widget.AbsListView
-
 import android.widget.ArrayAdapter
 import android.widget.CheckBox
+import android.widget.EditText
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewManager
+
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputConnection
+
+import android.support.v13.view.inputmethod.InputConnectionCompat
+import android.support.v13.view.inputmethod.InputContentInfoCompat
+import android.support.v13.view.inputmethod.EditorInfoCompat
 
 import android.graphics.drawable.GradientDrawable
 import android.graphics.Color
+
 
 import org.matrix.androidsdk.data.RoomMediaMessage;
 import org.matrix.androidsdk.data.timeline.EventTimeline;
 import org.matrix.androidsdk.rest.callback.SimpleApiCallback;
 import org.matrix.androidsdk.rest.model.Event;
+
+inline fun ViewManager.withRichEditText(mimeTypes: Array<String>, crossinline callbackLambda: (InputContentInfoCompat, Int, Bundle?) -> Unit, init: EditText.() -> Unit = {}): EditText {
+    return ankoView({ object : EditText(it) {
+        override fun onCreateInputConnection(editorInfo: EditorInfo): InputConnection {
+            val ic: InputConnection = super.onCreateInputConnection(editorInfo)
+            EditorInfoCompat.setContentMimeTypes(editorInfo, mimeTypes)
+            val callback = object : InputConnectionCompat.OnCommitContentListener {
+                override public fun onCommitContent(inputContentInfo: InputContentInfoCompat, flags: Int, opts: Bundle?):  Boolean {
+                    val lacksPermission = (flags and InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && lacksPermission) {
+                        try {
+                            inputContentInfo.requestPermission()
+                        } catch (e: Exception) {
+                            /*return@OnCommitContentListener false*/
+                            /*return false*/
+                        }
+                    }
+                    callbackLambda(inputContentInfo, flags, opts)
+                    return true
+                }
+            }
+            return InputConnectionCompat.createWrapper(ic, editorInfo, callback)
+        }
+    } }, theme = 0, init = init)
+}
 
 class ChatActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -164,8 +200,17 @@ class ChatActivity : Activity() {
                 weight = 2.0f
             }
 
+            val eventCreationListener = object: RoomMediaMessage.EventCreationListener {
+                override fun onEventCreated(message: RoomMediaMessage) { /*toast("event created $message")*/ }
+                override fun onEventCreationFailed(message: RoomMediaMessage, error: String) { toast("event creation failed $message : $error") }
+                override fun onEncryptionFailed(message: RoomMediaMessage) { toast("encryption failed failed $message") }
+            }
+
             linearLayout {
-                val message = editText("") {
+                val message = withRichEditText(arrayOf("image/gif", "image/png", "image/jpeg"), { inputContentInfo, flags, opts ->
+                    toast("${inputContentInfo.contentUri} ${inputContentInfo.description} ${inputContentInfo.linkUri}, $flags, $opts")
+                    room.sendMediaMessage(RoomMediaMessage(inputContentInfo.contentUri), 100, 100, eventCreationListener)
+                }) {
                     hint = "Write a message..."
                 }.lparams(width = matchParent) {
                     weight = 2.0f
@@ -174,11 +219,7 @@ class ChatActivity : Activity() {
                     val text = message.text.toString()
                     message.text.clear()
                     messagesList?.setSelectionFromTop(messages.size, 0)
-                    room.sendTextMessage(text, text, "markdown", object: RoomMediaMessage.EventCreationListener {
-                        override fun onEventCreated(message: RoomMediaMessage) { /*toast("event created $message")*/ }
-                        override fun onEventCreationFailed(message: RoomMediaMessage, error: String) { toast("event creation failed $message : $error") }
-                        override fun onEncryptionFailed(message: RoomMediaMessage) { toast("encryption failed failed $message") }
-                    })
+                    room.sendTextMessage(text, text, "markdown", eventCreationListener)
                 } }
             }
         }

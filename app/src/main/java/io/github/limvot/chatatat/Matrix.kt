@@ -153,7 +153,7 @@ public class Matrix : Service() {
             val (style, ID) = if (roomId in roomsToNotifications) {
                 var (oldId, oldNotification) = roomsToNotifications[roomId]!!
                 var style = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(oldNotification)
-                Pair(style.addMessage(message, 0, if (fromSelf) { null } else { senderName }), oldId)
+                Pair(style!!.addMessage(message, 0, if (fromSelf) { null } else { senderName }), oldId)
             } else {
                 Pair(NotificationCompat.MessagingStyle("Me")
                     .setConversationTitle(roomName)
