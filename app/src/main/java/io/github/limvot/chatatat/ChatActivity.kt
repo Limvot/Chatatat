@@ -129,14 +129,16 @@ class ChatActivity : Activity() {
                                         shape = GradientDrawable.RECTANGLE
                                         setColor(Color.DKGRAY)
                                         cornerRadii = if (fromSelf) {
-                                            floatArrayOf(15f, 15f, 5f, 5f, 15f, 15f, 15f, 15f)
+                                            floatArrayOf(50f, 50f, 20f, 20f, 50f, 50f, 50f, 50f)
                                         } else {
-                                            floatArrayOf(5f, 5f, 15f, 15f, 15f, 15f, 15f, 15f)
+                                            floatArrayOf(20f, 20f, 50f, 50f, 50f, 50f, 50f, 50f)
                                         }
                                     }
 
                                     if (event.content?.getAsJsonObject()?.get("msgtype")?.getAsString() == "m.image") {
                                         val image = imageView().lparams() {
+                                            width = dip(300)
+                                            height = dip(300)
                                             padding = dip(10)
                                         }
                                         Matrix.getImage(getApplicationContext(), event.content?.getAsJsonObject()?.get("url")?.getAsString()!!, image)
